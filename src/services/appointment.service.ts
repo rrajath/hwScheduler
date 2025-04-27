@@ -1,45 +1,76 @@
-import { AppointmentRepository } from '../repositories/appointment.repository.ts';
+import { inMemoryDb } from '../config/db.config.ts';
+import { getICalData } from '../util/ical.util.ts';
 import { CalendarService } from './calendar.service.ts';
+import * as ICAL from 'ical.js';
 
 export class AppointmentService {
-  private appointmentRepository: AppointmentRepository;
   private calendarService: CalendarService;
 
   constructor() {
-    this.appointmentRepository = new AppointmentRepository();
     this.calendarService = new CalendarService();
   }
 
+  /**
+   * This method retrieves all appointments for a specific client and agent.
+   * It fetches the calendar data from the in-memory database,
+   * extracts the events, and returns them in a structured format.
+   * @param clientId - The ID of the client.
+   * @param agentId- The ID of the agent.
+   * @returns An array of appointment objects containing start time, end time, and summary.
+   */
   async getAppointments(clientId: string, agentId: string) {
-    return await this.appointmentRepository.findAppointments(clientId, agentId);
+    const calendar = await getICalData();
+    const events = this.calendarService.getAllEvents(calendar);
+
+    return events.map((event) => {
+      const startTime = event.startDate;
+      const endTime = event.endDate;
+      const summary = event.summary;
+
+      console.info(
+        `Event Summary: ${summary}, Start Time: ${startTime}, End Time: ${endTime}`
+      );
+      return {
+        startTime: startTime.toString(),
+        endTime: endTime.toString(),
+        summary,
+      };
+    });
   }
 
+  /**
+   * This method books an appointment by checking the availability of the time slot
+   * and adding the event to the calendar if available.
+   * @param data - The appointment data containing start time, end time, and title.
+   * @returns A boolean indicating whether the appointment was successfully booked.
+   */
   async bookAppointment(data: any) {
     console.info('Booking an appointment');
-    const { clientId, agentId, startTime, endTime } = data;
-    const startDate = new Date(startTime);
-    const endDate = new Date(endTime);
+    const { startTime, endTime } = data;
+    const startDate = new Date(`${startTime}Z`);
+    const endDate = new Date(`${endTime}Z`);
 
-    const isAvailable = await this.calendarService.checkAvailability({
-      clientId,
-      agentId,
+    const title = data.title || 'New Appointment';
+    const calendar = await getICalData();
+    const isAvailable = this.calendarService.checkAvailability({
+      calendar,
       startDate,
       endDate,
     });
 
-    console.log('>> is appointment available?', isAvailable);
     if (isAvailable) {
-      await this.calendarService.addEvent({
-        summary: 'New House Scheduling',
+      const updatedCalendar = await this.calendarService.addEvent({
+        title,
         startTime: startDate,
         endTime: endDate,
       });
+      this.calendarService.refreshCalendar(
+        data.clientId,
+        data.agentId,
+        updatedCalendar
+      );
       return true;
     }
     return false;
-  }
-
-  public queryAppointments() {
-    console.info('Querying appointments');
   }
 }

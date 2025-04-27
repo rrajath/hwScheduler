@@ -1,9 +1,10 @@
 import * as ICAL from 'ical.js';
 import { getICalData } from '../util/ical.util.ts';
 import { TimeSlot } from '../models/availability.model.ts';
+import { inMemoryDatabase } from '../config/db.config.ts';
 
 export interface AddEventArgs {
-  summary: string;
+  title: string;
   startTime: Date;
   endTime: Date;
   description?: string;
@@ -17,8 +18,23 @@ export interface GetEventsByDateRangeArgs {
 }
 
 export class CalendarService {
+  /**
+   * This method adds an event to the calendar.
+   * It takes the event details as arguments and updates the calendar file.
+   * It also updates the in-memory database with the new calendar data.
+   *
+   *
+   * @param args - The event details to be added.
+   * @param args.title - The title of the event.
+   * @param args.startTime - The start time of the event.
+   * @param args.endTime - The end time of the event.
+   * @param args.description - The description of the event.
+   * @param args.location - The location of the event.
+   * @throws Error if the calendar file cannot be read or written.
+   * @returns The updated calendar component.
+   */
   async addEvent(args: AddEventArgs) {
-    const { summary, startTime, endTime, description, location } = args;
+    const { title, startTime, endTime, description, location } = args;
     // we read from calendar just before adding an event in order to get the most up to date state
     const calendar = await getICalData();
     const event = new ICAL.default.Component(['vevent', [], []]);
@@ -26,7 +42,7 @@ export class CalendarService {
     const uid = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     event.updatePropertyWithValue('uid', uid);
 
-    event.updatePropertyWithValue('summary', summary);
+    event.updatePropertyWithValue('summary', title);
     if (description) {
       event.updatePropertyWithValue('description', description);
     }
@@ -46,25 +62,31 @@ export class CalendarService {
     event.updatePropertyWithValue('created', now);
     calendar.addSubcomponent(event);
 
-    // TODO: change the location to the actual path of the calendar file
-    Deno.writeTextFileSync('/tmp/calendar.ics', calendar.toString());
+    Deno.writeTextFileSync('./calendar.ics', calendar.toString());
     console.info("Updated agent's calendar");
 
     return calendar;
   }
 
-  async checkAvailability({
-    clientId,
-    agentId,
+  /**
+   * This method checks if a given time range is available in the calendar.
+   * It takes the calendar, start date, and end date as arguments.
+   * It returns true if the time range is available, false otherwise.
+   * @param calendar - The calendar component to check.
+   * @param startDate - The start date of the time range.
+   * @param endDate - The end date of the time range.
+
+   * @returns true if the time range is available, false otherwise.
+   */
+  checkAvailability({
+    calendar,
     startDate,
     endDate,
   }: {
-    clientId: string;
-    agentId: string;
+    calendar: ICAL.default.Component;
     startDate: Date;
     endDate: Date;
   }) {
-    const calendar = await getICalData();
     const events = this.getAllEvents(calendar);
     const startTime = ICAL.default.Time.fromJSDate(startDate, true);
     const endTime = ICAL.default.Time.fromJSDate(endDate, true);
@@ -74,21 +96,37 @@ export class CalendarService {
       const eventEnd = event.endDate;
 
       return (
-        (eventStart.compare(startTime) > 0 &&
-          eventStart.compare(endTime) < 0) || // Event starts within range
-        (eventEnd.compare(startTime) > 0 && eventEnd.compare(endTime) < 0) || // Event ends within range
-        (eventStart.compare(startTime) < 0 && eventEnd.compare(endTime) > 0) // Event spans the entire range
+        (eventStart.compare(startTime) >= 0 &&
+          eventStart.compare(endTime) <= 0) || // Event starts within range
+        (eventEnd.compare(startTime) >= 0 && eventEnd.compare(endTime) <= 0) || // Event ends within range
+        (eventStart.compare(startTime) <= 0 && eventEnd.compare(endTime) >= 0) // Event spans the entire range
       );
     });
+
     return existingEvents.length == 0;
   }
 
+  /**
+   * This method retrieves all events from the calendar.
+   * It takes the calendar component as an argument and returns an array of events.
+   * @param calendar - The calendar component to retrieve events from.
+   * @returns An array of events.
+   */
   getAllEvents(calendar: ICAL.default.Component) {
     const events = calendar.getAllSubcomponents('vevent');
 
     return events.map((event) => new ICAL.default.Event(event));
   }
 
+  /**
+   * This method retrieves events from the calendar within a specified date range.
+   * It takes the calendar, start date, and end date as arguments.
+   * It returns an array of events that fall within the specified date range.
+   * @param calendar - The calendar component to retrieve events from.
+   * @param startDate - The start date of the date range.
+   * @param endDate - The end date of the date range (optional).
+   * @returns An array of events within the specified date range.
+   */
   getEventsByDateRange(
     calendar: ICAL.default.Component,
     startDate: Date,
@@ -133,6 +171,30 @@ export class CalendarService {
     });
   }
 
+  /**
+   * This method refreshes the calendar in the in-memory database.
+   * It takes the client ID, agent ID, and updated calendar as arguments.
+   * @param clientId - The client ID.
+   * @param agentId - The agent ID.
+   * @param calendar - The updated calendar component.
+   */
+  async refreshCalendar(
+    clientId: string,
+    agentId: string,
+    calendar: ICAL.default.Component
+  ) {
+    await inMemoryDatabase.set(
+      ['calendar', `${clientId}#${agentId}`],
+      calendar
+    );
+  }
+
+  /**
+   * This method retrieves time slots for a list of events.
+   * It takes an array of events as an argument and returns an array of time slots.
+   * @param events - The array of events to retrieve time slots from.
+   * @returns An array of time slots for the events.
+   */
   getTimeSlotsForEvents(events: ICAL.default.Event[]): TimeSlot[] {
     const timeSlots: TimeSlot[] = [];
     events.forEach((event) => {

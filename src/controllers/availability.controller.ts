@@ -1,6 +1,5 @@
 import { Hono } from 'https://jsr.io/@hono/hono/4.7.7/src/hono.ts';
 import { AvailabilityService } from '../services/availability.service.ts';
-import { validateTimeRange } from '../util/date.util.ts';
 
 const availabilityController = new Hono();
 const availabilityService = new AvailabilityService();
@@ -13,25 +12,35 @@ export interface TimeRange {
 availabilityController.get('/', async (c) => {
   const clientId = c.req.query('clientId');
   const agentId = c.req.query('agentId');
-  // const duration = c.req.query('duration');
   const timeRanges = c.req.query('timeRanges');
   const eventType = c.req.query('eventType');
 
-  // const eventTypes = ['meeting', 'call', 'appointment'];
   const duration = getDurationForEventType(eventType!);
-
   const query = {
     clientId: clientId!,
     agentId: agentId!,
     duration: Number(duration!),
     timeRangeList: timeRanges!,
   };
-
   const availableSlots = await availabilityService.findAvailableSlots(query);
   return c.json(availableSlots);
-  // return c.json({
-  //   message: 'This is a placeholder response',
-  // });
+});
+
+availabilityController.get('/optimal-days', async (c) => {
+  const clientId = c.req.query('clientId');
+  const agentId = c.req.query('agentId');
+  const lookAheadDays = c.req.query('lookAheadDays');
+
+  const lookAheadDaysValue = lookAheadDays ? Number(lookAheadDays) : 7;
+
+  const query = {
+    clientId: clientId!,
+    agentId: agentId!,
+    lookAheadDays: lookAheadDaysValue,
+  };
+
+  const optimalDays = await availabilityService.findOptimalDays(query);
+  return c.json(optimalDays);
 });
 
 function getDurationForEventType(eventType: string) {

@@ -9,3 +9,16 @@ export function validateTimeRange(startTime: Date, endTime: Date) {
     throw new Error('Start date must be before end date');
   }
 }
+
+export function getDayOfWeek(dayOfWeekInt: number) {
+  const daysOfWeek = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
+  return daysOfWeek[dayOfWeekInt];
+}
