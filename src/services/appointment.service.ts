@@ -1,4 +1,3 @@
-import Log from '../logging/logger.ts';
 import { AppointmentRepository } from '../repositories/appointment.repository.ts';
 import { CalendarService } from './calendar.service.ts';
 
@@ -16,7 +15,7 @@ export class AppointmentService {
   }
 
   async bookAppointment(data: any) {
-    Log.info('Booking an appointment');
+    console.info('Booking an appointment');
     const { clientId, agentId, startTime, endTime } = data;
     const startDate = new Date(startTime);
     const endDate = new Date(endTime);
@@ -41,6 +40,6 @@ export class AppointmentService {
   }
 
   public queryAppointments() {
-    Log.info('Querying appointments');
+    console.info('Querying appointments');
   }
 }

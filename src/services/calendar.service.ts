@@ -46,20 +46,24 @@ export class CalendarService {
     event.updatePropertyWithValue('created', now);
     calendar.addSubcomponent(event);
 
-    console.info('>> Writing to /tmp/calendar.ics');
+    // TODO: change the location to the actual path of the calendar file
     Deno.writeTextFileSync('/tmp/calendar.ics', calendar.toString());
-    console.info('>> Wrote to /tmp/calendar.ics');
+    console.info("Updated agent's calendar");
+
     return calendar;
   }
 
-  async checkAvailability(
-    { clientId, agentId, startDate, endDate }: {
-      clientId: string;
-      agentId: string;
-      startDate: Date;
-      endDate: Date;
-    },
-  ) {
+  async checkAvailability({
+    clientId,
+    agentId,
+    startDate,
+    endDate,
+  }: {
+    clientId: string;
+    agentId: string;
+    startDate: Date;
+    endDate: Date;
+  }) {
     const calendar = await getICalData();
     const events = this.getAllEvents(calendar);
     const startTime = ICAL.default.Time.fromJSDate(startDate, true);
@@ -88,7 +92,7 @@ export class CalendarService {
   getEventsByDateRange(
     calendar: ICAL.default.Component,
     startDate: Date,
-    endDate?: Date,
+    endDate?: Date
   ): ICAL.default.Event[] {
     // Get all events from the calendar
     const events = this.getAllEvents(calendar);
@@ -127,5 +131,18 @@ export class CalendarService {
         return false; // Skip events that cause errors
       }
     });
+  }
+
+  getTimeSlotsForEvents(events: ICAL.default.Event[]): TimeSlot[] {
+    const timeSlots: TimeSlot[] = [];
+    events.forEach((event) => {
+      const startDate = event.startDate.toJSDate();
+      const endDate = event.endDate.toJSDate();
+      timeSlots.push({
+        startTime: startDate,
+        endTime: endDate,
+      });
+    });
+    return timeSlots;
   }
 }

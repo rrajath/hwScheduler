@@ -137,3 +137,6 @@ dist
 
 # Jujutsu
 .jj
+
+# VSCode settings
+.vscode

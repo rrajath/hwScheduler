@@ -46,3 +46,6 @@ export async function bootstrapDatabase() {
   // write values from calendar to KV store
   inMemoryDatabase.set(['calendar', '1#1'], calendar);
 }
+
+// TODO: create a function to maintain agent database. This should include agent's usual work hours, holidays, etc.
+
