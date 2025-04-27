@@ -1,4 +1,3 @@
-import { TimeRange } from '../controllers/availability.controller.ts';
 import { validateTimeRange } from '../util/date.util.ts';
 import { getICalData } from '../util/ical.util.ts';
 import { CalendarService } from './calendar.service.ts';
@@ -105,55 +104,5 @@ export class AvailabilityService {
     });
 
     return timeRangesList;
-  }
-
-  async findAvailableSlot(
-    busySlots: any[],
-    duration: number,
-    startTime: Date,
-    endTime: Date
-  ): Promise<{ start: Date; end: Date } | null> {
-    // Sort busy slots by start time
-    busySlots.sort((a, b) => a.startDate - b.startDate);
-
-    let lastEndTime = startTime;
-
-    for (const busySlot of busySlots) {
-      const busyStartTime = new Date(busySlot.startDate.toString());
-      const busyEndTime = new Date(busySlot.endDate.toString());
-
-      // Check if there is a gap between the last end time and the busy start time
-      if (lastEndTime < busyStartTime) {
-        const availableDuration =
-          (busyStartTime.getTime() - lastEndTime.getTime()) / 60000; // in minutes
-
-        if (availableDuration >= duration) {
-          return {
-            start: lastEndTime,
-            end: new Date(lastEndTime.getTime() + duration * 60000),
-          };
-        }
-      }
-
-      // Update the last end time to the maximum of the current last end time and the busy end time
-      lastEndTime = new Date(
-        Math.max(lastEndTime.getTime(), busyEndTime.getTime())
-      );
-    }
-
-    // Check if there is available time after the last busy slot
-    if (lastEndTime < endTime) {
-      const availableDuration =
-        (endTime.getTime() - lastEndTime.getTime()) / 60000; // in minutes
-
-      if (availableDuration >= duration) {
-        return {
-          start: lastEndTime,
-          end: new Date(lastEndTime.getTime() + duration * 60000),
-        };
-      }
-    }
-
-    return null;
   }
 }
