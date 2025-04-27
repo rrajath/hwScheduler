@@ -1,4 +1,3 @@
-import Log from '../logging/logger.ts';
 import { load } from 'https://deno.land/std@0.224.0/dotenv/mod.ts';
 
 export async function readAPIKey() {
@@ -10,7 +9,7 @@ export async function readAPIKey() {
   const apiKey = Deno.env.get('API_KEY');
 
   if (apiKey == null) {
-    Log.error('Cannot find a .env file. Create one and set API_KEY');
+    console.error('Cannot find a .env file. Create one and set API_KEY');
     throw new Error('Cannot find a .env file');
   }
 
