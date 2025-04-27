@@ -1,13 +1,16 @@
 {
   "tasks": {
-    "dev": "deno run --allow-read --allow-env --allow-net --watch main.ts",
+    "dev": "deno run --allow-read --allow-write --allow-env --allow-net --unstable-kv --watch main.ts",
     "serve": "deno run --allow-read --allow-env --allow-net main.ts"
   },
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.7.7",
     "@std/assert": "jsr:@std/assert@1",
     "@std/fs": "jsr:@std/fs@^1.0.17",
-    "ical.js": "npm:ical.js@^2.1.0"
+    "@types/node": "npm:@types/node@^22.15.2",
+    "hono/": "https://deno.land/x/hono@v3.11.7/",
+    "ical.js": "npm:ical.js@^2.1.0",
+    "sqlite": "https://deno.land/x/sqlite@v3.7.0/mod.ts"
   },
   "fmt": {
     "semiColons": true,

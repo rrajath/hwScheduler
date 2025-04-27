@@ -1,18 +1,19 @@
 import { Hono } from '@hono/hono';
 import { readAPIKey } from './src/util/secrets.ts';
+import { appointmentController } from './src/controllers/appointment.controller.ts';
+import { bootstrapDatabase, dbInit } from './src/config/db.config.ts';
 
 const app = new Hono();
+await dbInit();
+await bootstrapDatabase();
 
-const apiKey = await readAPIKey();
-console.log('API key:', apiKey);
+// const apiKey = await readAPIKey();
+// console.log('API key:', apiKey);
 
 // if API key not found, throw error and exit
 
 // define endpoints
-// Using '/' for home page, this would give some basic info
-app.get('/', (c) => {
-  return c.text('Hello world!');
-});
+app.route('/api/appointments', appointmentController);
 
 // Using POST /appointments/book for booking an appointment
 // Use GET /appointments/search to search for appointment slots
