@@ -8,6 +8,9 @@ await dbInit();
 await bootstrapDatabase();
 
 // define endpoints
+app.get('/', (c) => {
+  return c.text('Welcome to House Whisper');
+});
 app.route('/api/appointments', appointmentController);
 app.route('/api/availability', availabilityController);
 

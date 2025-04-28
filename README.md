@@ -56,3 +56,15 @@ For querying for available times, the backend service expects one or more time r
 
 ### Work Hours for an Agent.
 An agent will have their work hours. For example, they may choose to work Wednesday through Sunday from 10am to 6pm each day. A different agent may have a different schedule. The in-memory data store maintains this and is frequently referenced while looking up available time slots. For example, if the time range is outside of an agent's work hours, the time range gets bounded to the work hours so that meetings won't get scheduled at odd hours (like the middle of the night).
+
+## How to run the code?
+Prerequisites:
+- [Deno](https://deno.com/)
+
+1. Git clone this repo
+2. `cd` into this repo
+3. run `deno task dev` in the terminal
+
+You should see that the server has started and is running on port 8000
+This means the backend service is running. Hitting the URL in the terminal (http://0.0.0.0:8000/) should take you to a hello world page
+While this is running, you can use the [chat interface](https://github.com/rrajath/hwChatInterface) to interact with it.
